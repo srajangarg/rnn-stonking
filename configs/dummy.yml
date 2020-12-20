@@ -1,0 +1,23 @@
+data:
+  dataset:
+    name: 'SingleStonkDataset'
+    feature_size: 5
+    sequence_length: 100
+  batch_size: 5
+
+model: 
+  name: ''
+  backbone: 
+    name: 'lstm'
+    input_size: 5       # Will matches data.feat_size for single stonk experiments
+    hidden_size: 256
+    batch_first: True
+  readout: 
+    output_size: 1
+    hidden_size: 256
+    num_layers: 0
+
+optimization:
+  lr: 0.0001
+
+weights:
