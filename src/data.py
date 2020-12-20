@@ -30,14 +30,14 @@ class SingleStonkDataset(StonkBaseDataset):
     """
     def __init__(self, cfg) -> None:
         super().__init__(cfg)
-        self.feat_size = cfg.feature_size
-        self.sequence_length = cfg.feature_size
+        self.feature_size = cfg.feature_size
+        self.sequence_length = cfg.sequence_length
 
     def __len__(self):
         """ Returns the total number of training instances in the data
         """
         # @srajan-garg: TODO
-        return 200
+        return 10000
 
     def __getitem__(self, idx: int):
         """ Args:
@@ -45,14 +45,15 @@ class SingleStonkDataset(StonkBaseDataset):
 
             Returns a dict with 2 keys:
                 price:  A single normalized tensor of size (sequence_len, 1)
-                        specifying price at which position is held/traded. Can simply be closing price
+                        specifying prices at which trades are executed. Can
+                        be anything between low/high at t+1
                 feats:  A single normalized tensor of size (sequence_len, feature_size)
                         containing open/close/low/high/volume/pos etc
         """
         # @srajan-garg: TODO
         elem = {
             'price': torch.rand(self.sequence_length, 1),
-            'feats': torch.rand(self.sequence_length, 5)
+            'feats': torch.rand(self.sequence_length, self.feature_size)
         }
         return elem
 
