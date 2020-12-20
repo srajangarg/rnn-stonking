@@ -14,11 +14,12 @@ class SharpeCriterion(nn.Module):
         # the prices is set in the dataloader. Instead, we can pass a low/high
         # price range and use low for sells and high for buys to emulate worst
         # case scenario
-        price = inputs['price']     # BxTx1     Price at which stock is traded
+        price = inputs['price']     # Bx(T+1)x1     Price at which stock is traded
 
-        # Add zero-position at t+1
-        positions = torch.cat([positions, torch.zeros_like(positions[:,:1,:])], dim=1)
-        delta_pos = positions[:,1:,:] - positions[:,:-1,:]      # BxTx1 stock bought
+        # Add zero-position at start/end
+        zero_pos = torch.zeros_like(positions[:,:1,:])
+        positions = torch.cat([zero_pos, positions, zero_pos], dim=1)
+        delta_pos = positions[:,1:,:] - positions[:,:-1,:]      # Bx(T+1)x1 stock bought
         pnl_t = -1 * (delta_pos*price)                          # Note: negative sign
 
         pnl =  pnl_t.mean(dim=1)            # Bx1   pnl per candlestick
@@ -26,8 +27,9 @@ class SharpeCriterion(nn.Module):
 
         metrics = {
             'pnl': torch.cumsum(pnl_t, dim=1)[:,0],     # accummulated pnl over time
-            'pnl_mean': pnl.mean(),
-            'pnl_std': pnl.std(),
+            'pnl_mean': pnl.mean().item(),
+            'pnl_std': pnl.std().item(),
+            'sharpe': sharpe.item(),
         }
 
         # Notice that loss is negative sharpe

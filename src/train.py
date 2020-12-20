@@ -76,7 +76,9 @@ def main():
 
             if (iter%cfg.display.iprint)==0:
                 with torch.no_grad():
-                    print(f'e{epoch:4d} iter{iter:6d} loss {loss:6.2f}')
+                    s = f'e{epoch:4d};  iter{iter:6d};  loss{loss:6.2f};  '
+                    s = s + ';  '.join([f'{k}{v:9.1e}' for k,v in metrics.items() if isinstance(v, float)])
+                    print(s)
 
             iter += 1
 

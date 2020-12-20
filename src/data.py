@@ -44,15 +44,18 @@ class SingleStonkDataset(StonkBaseDataset):
                 idx: training index \in [0, self.len)
 
             Returns a dict with 2 keys:
-                price:  A single normalized tensor of size (sequence_len, 1)
-                        specifying prices at which trades are executed. Can
-                        be anything between low/high at t+1
+                price:  A single normalized tensor of size (sequence_len+1, 1)
+                        specifying prices at which trades are executed. price[t]
+                        is the trade-price at which the positions predicted using feats[t]
+                        are obtained. We need an extra element (size sequence_len+1)
+                        to find the price at which final positions are sold.
+                        Can be anything between low/high at t+1.
                 feats:  A single normalized tensor of size (sequence_len, feature_size)
                         containing open/close/low/high/volume/pos etc
         """
         # @srajan-garg: TODO
         elem = {
-            'price': torch.rand(self.sequence_length, 1),
+            'price': torch.rand(self.sequence_length+1, 1),
             'feats': torch.rand(self.sequence_length, self.feature_size)
         }
         return elem
