@@ -1,0 +1,11 @@
+# @package _group_
+_target_: src.models.SimpleModel
+
+# Backbone RNN must be specified separately
+backbone: ???
+
+# Create an MLP with these parameters.
+readout:
+  output_size: 1
+  hidden_size: 256
+  num_layers: 2

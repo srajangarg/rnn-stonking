@@ -1,28 +1,5 @@
-import copy
-import inspect
-
 # import cv2
 import numpy as np
-import yaml
-
-from .attr_dict import nested_attr_dict
-
-
-def load_config(config_file):
-    cfg = None
-    with open(config_file, "r") as f:
-        cfg = yaml.load(f, Loader=yaml.FullLoader)
-    return nested_attr_dict(cfg)
-
-def get_default_kwargs(func):
-    """ Returns default kwargs for function `func` as a dict
-    """
-    sig = inspect.signature(func)
-    kwargs = {}
-    for pname,defval in dict(sig.parameters).items():
-        if defval.default != inspect.Parameter.empty:
-            kwargs[pname] = copy.deepcopy(defval.default)
-    return kwargs
 
 def write_video(fname, frames, fps=25, size=None, codec='MJPG'):
     if size is None:

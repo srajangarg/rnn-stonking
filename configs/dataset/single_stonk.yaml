@@ -1,0 +1,4 @@
+# @package _group_
+_target_: src.data.SingleStonkDataset
+feature_size: 5
+sequence_length: 100
