@@ -1,0 +1,27 @@
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}_${hydra.job.config_name}_${hydra.job.override_dirname}
+
+defaults:
+  - dataset: single_stonk
+  - model: simple_rnn
+  - model/backbone: lstm
+
+dataloader:
+  batch_size: 2048
+  num_workers: 4
+
+criterion:
+  _target_: src.criterions.SharpeCriterion
+
+random_seed: 0
+
+optim:
+  lr: 0.0001
+  num_epochs: 1000
+
+weights:
+
+display:
+  logdir: 'summary'
+  iprint: 10

@@ -1,12 +1,12 @@
-import inspect
+from typing import Tuple
 import torch
 from torch import nn
 
 class SharpeCriterion(nn.Module):
-    def __init__(self, cfg):
+    def __init__(self):
         super().__init__()
 
-    def forward(self, positions, inputs):
+    def forward(self, positions:torch.Tensor, inputs:dict) -> Tuple[torch.Tensor, dict]:
         # `positions` is a BxTx1 tensor containing the amount of stock held
         # at the end of a candlestick. Changes in position correspond to trades.
 
@@ -22,11 +22,16 @@ class SharpeCriterion(nn.Module):
         delta_pos = positions[:,1:,:] - positions[:,:-1,:]      # Bx(T+1)x1 stock bought
         pnl_t = -1 * (delta_pos*price)                          # Note: negative sign
 
+        # Normalizing price:
+        # typical pnl when predicting shares is given by    \mean shares * price
+        # we isntead predict shares (in money value) as     \mean (shares*mean_price) * (price/mean_price)
+
         pnl =  pnl_t.mean(dim=1)            # Bx1   pnl per candlestick
         sharpe = pnl.mean() / pnl.std()
 
         metrics = {
-            'pnl': torch.cumsum(pnl_t, dim=1)[:,0],     # accummulated pnl over time
+            'pnl_t': pnl_t,
+            'pnl_cumsum': torch.cumsum(pnl_t, dim=1)[:,0],     # accummulated pnl over time
             'pnl_mean': pnl.mean().item(),
             'pnl_std': pnl.std().item(),
             'sharpe': sharpe.item(),
@@ -34,18 +39,3 @@ class SharpeCriterion(nn.Module):
 
         # Notice that loss is negative sharpe
         return -1 * sharpe, metrics
-
-
-def get_model_class_by_name(name):
-    """ Searches for nn.Module classes in this file with matching (case-insensitive) name
-    """
-    all_classes = {k.lower():v for k,v in globals().items() if (
-                        inspect.isclass(v) and
-                        (nn.Module in inspect.getmro(v))
-                    )}
-    return all_classes[name.lower()]
-
-def create_criterion(cfg) -> nn.Module:
-    model_class = get_model_class_by_name(cfg.name)
-    return model_class(cfg)
-
