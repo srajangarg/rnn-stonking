@@ -1,11 +1,11 @@
-hydra:
-  run:
-    dir: outputs/${now:%Y-%m-%d}_${hydra.job.config_name}_${hydra.job.override_dirname}
-
 defaults:
   - dataset: single_stonk
   - model: simple_rnn
   - model/backbone: lstm
+
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}_${hydra.job.config_name}_${hydra.job.override_dirname}
 
 dataloader:
   batch_size: 2048

@@ -4,6 +4,7 @@ Create stonking data loader classes
 import inspect
 from typing import Dict, List
 import hydra
+import datetime
 
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -24,23 +25,46 @@ class StonkBaseDataset(Dataset):
     def __len__(self):
         raise NotImplementedError
 
+    @staticmethod
+    def connect_to_db(ip, port, username, password, dbname):
+        # TODO
+        return None
+
 
 class SingleStonkDataset(StonkBaseDataset):
     """ Loads data for a single stock
     """
-    def __init__(self, feature_size:int, sequence_length:int) -> None:
+    def __init__(self,
+            sequence_length:int,
+            db: DictConfig,
+            ticker: str,
+            start_date: str,
+            end_date: str,
+            resolution: str,
+            num_next_futures: int,
+        ) -> None:
         super().__init__()
-        self.feature_size = feature_size
         self.sequence_length = sequence_length
 
-        self.price = torch.rand(len(self), self.sequence_length+1, 1)
-        self.feats = torch.rand(len(self), self.sequence_length, self.feature_size)
+        # Create sql connection db.{ip,port,username,password,dbname}
+        conn = self.connect_to_db(**db)
+
+        # Extract and filter data from sql usind ticker/start/end dates
+        start_date = datetime.date(*list(map(int,start_date.split('-'))))
+        end_date = datetime.date(*list(map(int,end_date.split('-'))))
+        assert(resolution == '1min')
+        ...
+
+        # Concatenate all data in prices/features.
+        # idsubsequence_to_idxstart[i] points to index at which i-th subsequence (of length sequence_length) starts
+        self.price = torch.rand(1000000, 1)
+        self.feats = torch.rand(1000000, 5 * num_next_futures)
+        self.idsubsequence_to_idxstart = [i for i in range(10000)]    # TODO
 
     def __len__(self):
         """ Returns the total number of training instances in the data
         """
-        # @srajan-garg: TODO
-        return 10000
+        return len(self.idsubsequence_to_idxstart)
 
     def __getitem__(self, idx: int):
         """ Args:
@@ -58,10 +82,11 @@ class SingleStonkDataset(StonkBaseDataset):
                 feats:  A single normalized tensor of size (sequence_length, feature_size)
                         containing open/close/low/high/volume/pos etc
         """
-        # @srajan-garg: TODO
+        # @srajan-garg: TODO might have to normalize prices/features
+        seq_start_idx = self.idsubsequence_to_idxstart[idx]
         elem = {
-            'price': self.price[idx],
-            'feats': self.feats[idx]
+            'price': self.price[seq_start_idx: seq_start_idx+self.sequence_length+1],
+            'feats': self.feats[seq_start_idx: seq_start_idx+self.sequence_length]
         }
         return elem
 
@@ -84,9 +109,10 @@ def get_dataloader(cfg: DictConfig) -> DataLoader:
     dataset = instantiate(cfg.dataset)
     return DataLoader(dataset, collate_fn=collate_fn, **cfg.dataloader)
 
+
 @hydra.main(config_path="../configs", config_name="dummy")
 def test(cfg : DictConfig) -> None:
-    dataloader = get_dataloader(cfg.data)
+    dataloader = get_dataloader(cfg)
     for dd in dataloader:
         print(dd['price'].shape)
         print(dd['feats'].shape)

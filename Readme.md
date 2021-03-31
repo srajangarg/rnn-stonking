@@ -14,5 +14,5 @@ conda install -y pytorch torchvision cudatoolkit=10.2 -c pytorch
 conda install -y -c conda-forge tensorflow tensorboard tensorboardX
 pip install ipdb pyyaml matplotlib
 pip install hydra-core
-
+conda install jupyter
 ```

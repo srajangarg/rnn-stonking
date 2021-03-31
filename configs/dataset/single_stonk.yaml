@@ -1,4 +1,18 @@
 # @package _group_
 _target_: src.data.SingleStonkDataset
-feature_size: 5
-sequence_length: 100
+
+db:
+  ip: 127.0.0.1
+  port: 3306
+  username: root
+  password: root
+  dbname: dev
+
+ticker: CL    # Ticker of commodity being traded
+start_date: '2010-01-01'  # Y-M-D
+end_date:   '2020-12-31'  # Y-M-D
+resolution: 1min          # Data resolution - 1min/5min/1day
+num_next_futures: 4       # Use data from the next N futures
+
+sequence_length: 100  # Train on sequences of these lengths
+# feature_size: 5 * num_next_futures       # open/high/low/close/volume
