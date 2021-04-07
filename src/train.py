@@ -23,33 +23,33 @@ log = logging.getLogger(__name__)
 
 @hydra.main(config_path="../configs", config_name="dummy")
 def main(cfg : DictConfig) -> None:
-    print('###### Config ######')
-    print(OmegaConf.to_yaml(cfg))
+    log.info('###### Config ######')
+    log.info(OmegaConf.to_yaml(cfg))
 
     random.seed(cfg.random_seed)
     np.random.seed(cfg.random_seed)
     torch.manual_seed(cfg.random_seed)
     torch.cuda.manual_seed(cfg.random_seed)
 
-    print('###### Loading data ######')
+    log.info('###### Loading data ######')
     dataloader = get_dataloader(cfg)
-    print(dataloader)
-    print(dataloader.dataset)
-    print('###########################')
+    log.info(dataloader)
+    log.info(dataloader.dataset)
+    log.info('###########################')
 
-    print('###### Creating model #####')
-    model = instantiate(cfg.model)
-    print(model)
-    print('###########################')
+    log.info('###### Creating model #####')
+    model: torch.nn.Module = instantiate(cfg.model)
+    log.info(model)
+    log.info('###########################')
 
-    print('###### Creating crit ######')
+    log.info('###### Creating crit ######')
     criterion = instantiate(cfg.criterion)
-    print(criterion)
-    print('###########################')
+    log.info(criterion)
+    log.info('###########################')
 
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     device = torch.device(device)
-    print('using device', device)
+    log.info(f'using device {device}')
 
     model = model.to(device)
     criterion = criterion.to(device)
@@ -72,11 +72,14 @@ def main(cfg : DictConfig) -> None:
 
             # Take the training step.
             loss.backward()
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.clip_grad_norm)
             optimizer.step()
 
             if (iter%cfg.display.iprint)==0:
                 with torch.no_grad():
                     float_metrics = {k:v for k,v in metrics.items() if isinstance(v, float)}
+                    float_metrics['grad_norm'] = grad_norm
+
                     viz.plot_current_scalars(float_metrics, iter)
 
                     s = f'e{epoch:4d};  iter{iter:6d};  loss{loss:6.2f};  '

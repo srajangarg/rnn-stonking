@@ -3,8 +3,9 @@ import torch
 from torch import nn
 
 class SharpeCriterion(nn.Module):
-    def __init__(self):
+    def __init__(self, loss_type='sharpe'):
         super().__init__()
+        self.loss_type = loss_type
 
     def forward(self, positions:torch.Tensor, inputs:dict) -> Tuple[torch.Tensor, dict]:
         # `positions` is a BxTx1 tensor containing the amount of stock held
@@ -15,6 +16,8 @@ class SharpeCriterion(nn.Module):
         # price range and use low for sells and high for buys to emulate worst
         # case scenario
         price = inputs['price']     # Bx(T+1)x1     Price at which stock is traded
+
+        # TODO: set warmup - first 100 positions are zero
 
         # Add zero-position at start/end
         zero_pos = torch.zeros_like(positions[:,:1,:])
@@ -27,15 +30,22 @@ class SharpeCriterion(nn.Module):
         # we isntead predict shares (in money value) as     \mean (shares*mean_price) * (price/mean_price)
 
         pnl =  pnl_t.mean(dim=1)            # Bx1   pnl per candlestick
-        sharpe = pnl.mean() / pnl.std()
+        sharpe = pnl.mean() / (pnl.std() + 1e-8)
 
         metrics = {
             'pnl_t': pnl_t,
             'pnl_cumsum': torch.cumsum(pnl_t, dim=1)[:,0],     # accummulated pnl over time
+            'pnl_sum': pnl_t.sum(dim=1).mean().item(),
             'pnl_mean': pnl.mean().item(),
             'pnl_std': pnl.std().item(),
             'sharpe': sharpe.item(),
         }
 
-        # Notice that loss is negative sharpe
-        return -1 * sharpe, metrics
+        if self.loss_type == 'sharpe':
+            loss = -1 * sharpe          # Maximize sharpe
+        elif self.loss_type == 'pnl':
+            loss = -1 * pnl.mean()      # Maximize pnl
+        else:
+            raise ValueError(self.loss_type)
+
+        return loss, metrics

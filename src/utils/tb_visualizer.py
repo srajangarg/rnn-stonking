@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path as osp
 
@@ -14,10 +15,12 @@ else:
     print(f'Found display : {os.environ["DISPLAY"]}')
 import matplotlib.pyplot as plt
 
+# A logger for this file
+log = logging.getLogger(__name__)
 
 class TBVisualizer():
     def __init__(self, logdir:str) -> None:
-        print("Logging to {}".format(logdir))
+        log.info("Logging to {}".format(logdir))
         self.log_dir = logdir
         self.stats_dir = f'{self.log_dir}/stats/'
         self.mesh_dir = f'{self.log_dir}/mesh/'

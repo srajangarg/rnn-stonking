@@ -1,6 +1,6 @@
 # @package _group_
 _target_: torch.nn.LSTM
-input_size: 5       # Should match data.dataset.feature_size
+input_size: 15       # Should match data.dataset.feature_size
 hidden_size: 1024
 num_layers: 2
 batch_first: True

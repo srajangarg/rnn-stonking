@@ -2,23 +2,22 @@ defaults:
   - dataset: single_stonk
   - model: simple_rnn
   - model/backbone: lstm
+  - criterion: pnl
 
 hydra:
   run:
-    dir: outputs/${now:%Y-%m-%d}_${hydra.job.config_name}_${hydra.job.override_dirname}
+    dir: outputs/${now:%Y-%m-%d-%H:%M:%S}_${hydra.job.config_name}_${hydra.job.override_dirname}
 
 dataloader:
-  batch_size: 2048
-  num_workers: 4
-
-criterion:
-  _target_: src.criterions.SharpeCriterion
+  batch_size: 256
+  num_workers: 12
 
 random_seed: 0
 
 optim:
   lr: 0.0001
   num_epochs: 1000
+clip_grad_norm: 1
 
 weights:
 

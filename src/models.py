@@ -6,9 +6,9 @@ from omegaconf import DictConfig
 from .utils import net_blocks
 
 class SimpleModel(nn.Module):
-    def __init__(self, backbone:DictConfig, readout:DictConfig) -> None:
+    def __init__(self, backbone:nn.Module, readout:DictConfig) -> None:
         super().__init__()
-        self.backbone = instantiate(backbone)
+        self.backbone = backbone
         self.readout = create_readout_network(readout, backbone.hidden_size)
 
     def forward(self, inputs:dict) -> torch.Tensor:
@@ -20,6 +20,8 @@ class SimpleModel(nn.Module):
         positions = positions.view(b,t,1)
 
         return positions
+
+# TODO: SimpleNModel
 
 def create_readout_network(cfg:DictConfig, input_size:int) -> nn.Module:
     modules = []
