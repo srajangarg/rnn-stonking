@@ -1,5 +1,6 @@
 defaults:
   - dataset: single_stonk
+  - dataset@val_dataset: single_stonk_val
   - model: simple_rnn
   - model/backbone: lstm
   - criterion: pnl
@@ -11,6 +12,10 @@ hydra:
 dataloader:
   batch_size: 256
   num_workers: 12
+val_dataloader:
+  batch_size: 1
+  num_workers: 12
+  shuffle: False
 
 random_seed: 0
 
@@ -24,3 +29,4 @@ weights:
 display:
   logdir: 'summary'
   iprint: 10
+  ival: 1  # in epochs

@@ -16,3 +16,7 @@ pip install ipdb pyyaml matplotlib
 pip install hydra-core
 conda install jupyter
 ```
+
+## Sql server
+Initialization on maul
+

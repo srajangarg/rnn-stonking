@@ -1,0 +1,16 @@
+_target_: src.data.SingleStonkDataset
+
+db: ${dataset.db}   # This may not work
+
+contract: ${dataset.contract}    # Ticker of commodity being traded
+# start_date: '2020-04-08'  # Y-M-D
+# end_date:   '2020-08-13'  # Y-M-D
+start_date: '2012-01-01'  # Y-M-D
+end_date:   '2020-12-31'  # Y-M-D
+
+resolution: ${dataset.resolution}               # Data resolution - 1min/5min/1day
+num_next_futures: ${dataset.num_next_futures}   # Use data from the next N futures
+
+sequence_length: 300  # Train on sequences of these lengths
+subsequence_shift: ${val_dataset.sequence_length}
+# feature_size: 5 * num_next_futures       # open/high/low/close/volume

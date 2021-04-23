@@ -13,7 +13,9 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
 
-from .data import get_dataloader
+from .eval import evaluate
+
+from .data import get_dataloader, get_valdataloader
 from .utils.tb_visualizer import TBVisualizer
 
 torch.backends.cudnn.benchmark = True
@@ -35,6 +37,12 @@ def main(cfg : DictConfig) -> None:
     dataloader = get_dataloader(cfg)
     log.info(dataloader)
     log.info(dataloader.dataset)
+    log.info('###########################')
+
+    log.info('###### Loading val data ######')
+    val_dataloader = get_valdataloader(cfg)
+    log.info(val_dataloader)
+    log.info(val_dataloader.dataset)
     log.info('###########################')
 
     log.info('###### Creating model #####')
@@ -60,8 +68,12 @@ def main(cfg : DictConfig) -> None:
 
     iter = 0
     for epoch in range(cfg.optim.num_epochs):
+
+        # Evaluate
+        evaluate(model, val_dataloader, -1, output_dir='eval/', viz=viz)
+
         for i, inputs in enumerate(dataloader):
-            inputs = {k:v.to(device) for k,v in inputs.items()}
+            inputs = {k:(v.to(device) if torch.is_tensor(v) else v) for k,v in inputs.items()}
 
             # Zero the optimizer gradient.
             optimizer.zero_grad()
@@ -88,6 +100,9 @@ def main(cfg : DictConfig) -> None:
 
             iter += 1
 
+        if (epoch%cfg.display.ival)==0:
+            # Evaluate
+            evaluate(model, val_dataloader, epoch, output_dir='eval/', viz=viz)
 
 if __name__ == "__main__":
     main()

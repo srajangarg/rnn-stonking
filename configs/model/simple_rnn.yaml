@@ -1,4 +1,3 @@
-# @package _group_
 _target_: src.models.SimpleModel
 
 # Backbone RNN must be specified separately

@@ -122,13 +122,18 @@ class SingleStonkDataset(StonkBaseDataset):
             end_date: str,
             resolution: str,
             num_next_futures: int,
-            cache_file: str = None,
+            subsequence_shift: int,
         ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
         self.num_next_futures = num_next_futures
 
+        # TODO: Don't hardcode cache file path
+        cache_file = f"cache/{contract}_fut{num_next_futures}_{start_date}_{end_date}.pkl"
+        cache_file = hydra.utils.to_absolute_path(cache_file)
+
         if cache_file is not None and Path(cache_file).is_file():
+            print(cache_file)
             self.data = pd.read_pickle(cache_file)
         else:
             # Create sql connection db.{ip,port,username,password,dbname}
@@ -151,7 +156,7 @@ class SingleStonkDataset(StonkBaseDataset):
 
         num_minutes_per_day = 960       # Ugly hardcode
         num_days = len(self.data) // num_minutes_per_day
-        ids = torch.arange(1, num_minutes_per_day - sequence_length - 1)
+        ids = torch.arange(1, num_minutes_per_day - sequence_length - 1, subsequence_shift)
         ids = ids[:, None] + num_minutes_per_day * torch.arange(num_days)
         self.idsubsequence_to_idxstart = list(map(int, ids.view(-1)))
 
@@ -191,6 +196,7 @@ class SingleStonkDataset(StonkBaseDataset):
 
         # What prices are trades executed at?
         price = seq[['close_0']].to_numpy()[:self.sequence_length+1]
+        price_raw = price.copy()
         price = price / price[0,:]            # Since positions are in 'money-space', prices are normalized
 
         # Normalize costs by previous minute close
@@ -204,6 +210,7 @@ class SingleStonkDataset(StonkBaseDataset):
 
         assert(feats.shape[0] == self.sequence_length)
         assert(price.shape[0] == self.sequence_length+1)
+        assert(price_raw.shape[0] == self.sequence_length+1)
 
         price = torch.as_tensor(price).float()
         feats = torch.as_tensor(feats).float()
@@ -220,7 +227,9 @@ class SingleStonkDataset(StonkBaseDataset):
             # 'price': self.price[seq_start_idx: seq_start_idx+self.sequence_length+1],
             # 'feats': self.feats[seq_start_idx: seq_start_idx+self.sequence_length]
             'price': price.float(),
+            'price_raw': price.float(),
             'feats': feats.float(),
+            'datetime': seq.index[0],
         }
         return elem
 
@@ -235,13 +244,22 @@ def collate_fn(batch: List[Dict[str,torch.Tensor]]) -> Dict[str,torch.Tensor]:
     assert len(batch) > 0
     collated_batch = {}
     for key in batch[0]:
-        collated_batch[key] = default_collate([elem[key] for elem in batch])
+        try:
+            collated_batch[key] = default_collate([elem[key] for elem in batch])
+        except TypeError:
+            collated_batch[key] = [elem[key] for elem in batch]
+        except Exception as e:
+            log.error(e, exc_info=True)
     return collated_batch
 
 
 def get_dataloader(cfg: DictConfig) -> DataLoader:
     dataset = instantiate(cfg.dataset)
     return DataLoader(dataset, collate_fn=collate_fn, **cfg.dataloader)
+
+def get_valdataloader(cfg: DictConfig) -> DataLoader:
+    dataset = instantiate(cfg.val_dataset)
+    return DataLoader(dataset, collate_fn=collate_fn, **cfg.val_dataloader)
 
 
 @hydra.main(config_path="../configs", config_name="dummy")
@@ -251,7 +269,8 @@ def test(cfg : DictConfig) -> None:
         print(dd['price'].shape)
         print(dd['feats'].shape)
         # import ipdb; ipdb.set_trace()
-        x=0
+        break
+#         x=0
 
 if __name__ == "__main__":
     test()
