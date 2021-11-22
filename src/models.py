@@ -33,5 +33,5 @@ def create_readout_network(cfg:DictConfig, input_size:int) -> nn.Module:
         )
         input_size = cfg.hidden_size
     modules.append(nn.Linear(input_size, cfg.output_size))
-    modules.append(nn.Sigmoid())    # Note: positions are in (0,1)
+    modules.append(nn.Tanh())    # Note: positions are in (-1,1)
     return nn.Sequential(*modules)

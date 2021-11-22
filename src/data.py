@@ -13,7 +13,6 @@ import pandas as pd
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
-from sqlalchemy import create_engine
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.dataloader import default_collate
 from pathlib import Path
@@ -89,9 +88,6 @@ def get_minute_data(connection, contract, start_date, end_date, num_next_futures
 ### utilities end
 
 
-
-
-
 class StonkBaseDataset(Dataset):
     """ Base class for all stonking datasets,
         can put common processing code here
@@ -116,61 +112,41 @@ class SingleStonkDataset(StonkBaseDataset):
     """
     def __init__(self,
             sequence_length:int,
-            db: DictConfig,
-            contract: str,
-            start_date: str,
-            end_date: str,
-            resolution: str,
-            num_next_futures: int,
-            subsequence_shift: int,
+            # db: DictConfig,
+            # contract: str,
+            # start_date: str,
+            # end_date: str,
+            # resolution: str,
         ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
-        self.num_next_futures = num_next_futures
 
-        # TODO: Don't hardcode cache file path
-        cache_file = f"cache/{contract}_fut{num_next_futures}_{start_date}_{end_date}.pkl"
-        cache_file = hydra.utils.to_absolute_path(cache_file)
-
-        if cache_file is not None and Path(cache_file).is_file():
-            print(cache_file)
-            self.data = pd.read_pickle(cache_file)
-        else:
-            # Create sql connection db.{ip,port,username,password,dbname}
-            conn = self.connect_to_db(**db)
-
-            # Extract and filter data from sql usind ticker/start/end dates
-            # start_date = datetime.date(*list(map(int,start_date.split('-'))))
-            # end_date = datetime.date(*list(map(int,end_date.split('-'))))
-            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
-            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
-            assert(resolution == '1min')
-            self.data = get_minute_data(conn, contract, start_date, end_date, num_next_futures)
-            if cache_file is not None:
-                self.data.to_pickle(cache_file)
 
         # Concatenate all data in prices/features.
         # idsubsequence_to_idxstart[i] points to index at which i-th subsequence (of length sequence_length) starts
         # self.price = torch.rand(1000000, 1)
         # self.feats = torch.rand(1000000, 5 * num_next_futures)
 
-        num_minutes_per_day = 960       # Ugly hardcode
-        num_days = len(self.data) // num_minutes_per_day
-        ids = torch.arange(1, num_minutes_per_day - sequence_length - 1, subsequence_shift)
-        ids = ids[:, None] + num_minutes_per_day * torch.arange(num_days)
-        self.idsubsequence_to_idxstart = list(map(int, ids.view(-1)))
+        # num_minutes_per_day = 960       # Ugly hardcode
+        # num_days = len(self.data) // num_minutes_per_day
+        # ids = torch.arange(1, num_minutes_per_day - sequence_length - 1, subsequence_shift)
+        # ids = ids[:, None] + num_minutes_per_day * torch.arange(num_days)
+        # self.idsubsequence_to_idxstart = list(map(int, ids.view(-1)))
 
-        # Filter out subsequences that have Nan in first prev_close
-        first_row = self.data.iloc[self.idsubsequence_to_idxstart]
-        bad_rows = first_row[[f'prev_close_{i}' for i in range(num_next_futures)]].isnull().any(axis=1)
-        self.idsubsequence_to_idxstart = [id for id,bad in zip(self.idsubsequence_to_idxstart, bad_rows) if not bad]
-        log.info(f'Removed {bad_rows.to_numpy().sum()} subsequences with NaN prev_close')
-        log.info(f'Left with {len(self)} subsequences')
+        # # Filter out subsequences that have Nan in first prev_close
+        # first_row = self.data.iloc[self.idsubsequence_to_idxstart]
+        # bad_rows = first_row[[f'prev_close_{i}' for i in range(num_next_futures)]].isnull().any(axis=1)
+        # self.idsubsequence_to_idxstart = [id for id,bad in zip(self.idsubsequence_to_idxstart, bad_rows) if not bad]
+        # log.info(f'Removed {bad_rows.to_numpy().sum()} subsequences with NaN prev_close')
+        # log.info(f'Left with {len(self)} subsequences')
+        self.data = pd.read_csv("/Users/garg/code/rnn-stonking/ether_sample.csv")
+
 
     def __len__(self):
         """ Returns the total number of training instances in the data
         """
-        return len(self.idsubsequence_to_idxstart)
+        return 1
+        # return len(self.idsubsequence_to_idxstart)
 
     def __getitem__(self, idx: int):
         """ Args:
@@ -189,36 +165,23 @@ class SingleStonkDataset(StonkBaseDataset):
                         containing open/close/low/high/volume/pos etc
         """
         # @srajan-garg: TODO might have to normalize prices/features
-        seq_start_idx = self.idsubsequence_to_idxstart[idx]
-        seq = self.data.iloc[seq_start_idx: seq_start_idx+self.sequence_length+1].copy()
 
-        assert(len(seq['day'].unique()) == 1)
+        feat_cols = ['Open_15', 'High_15', 'Low_15', 'Close_15', 'VWAP_15', 'Volume_15', 'Count_15', 'Volume_Count', 'Open_60', 'High_60', 'Low_60', 'Close_60', 'VWAP_60', 'Volume_60', 'Count_60', 'Volume_Count', 'Open_240', 'High_240', 'Low_240', 'Close_240', 'VWAP_240', 'Volume_240', 'Count_240', 'Volume_Count']
 
-        # What prices are trades executed at?
-        price = seq[['close_0']].to_numpy()[:self.sequence_length+1]
-        price_raw = price.copy()
-        price = price / price[0,:]            # Since positions are in 'money-space', prices are normalized
+        seq = self.data.iloc[idx: idx+self.sequence_length+1].copy()
+        feats = seq[feat_cols].to_numpy()[:self.sequence_length]
+        price = seq[['Close']].to_numpy()
 
-        # Normalize costs by previous minute close
-        for i in range(self.num_next_futures):
-            seq[[f'open_{i}', f'close_{i}', f'high_{i}', f'low_{i}']] = np.log(
-                    seq[[f'open_{i}', f'close_{i}', f'high_{i}', f'low_{i}']].div(seq[f'prev_close_{i}'], axis=0)
-                )
-
-        cols = [[f'open_{i}', f'close_{i}', f'high_{i}', f'low_{i}', f'norm_volume_{i}'] for i in range(self.num_next_futures)]
-        feats = seq[sum(cols, [])].to_numpy()[:self.sequence_length]
 
         assert(feats.shape[0] == self.sequence_length)
         assert(price.shape[0] == self.sequence_length+1)
-        assert(price_raw.shape[0] == self.sequence_length+1)
-
         price = torch.as_tensor(price).float()
         feats = torch.as_tensor(feats).float()
         try:
             assert(torch.isfinite(price).all())
             assert(torch.isfinite(feats).all())
         except AssertionError as e:
-            log.error((idx,seq_start_idx))
+            log.error(idx)
             log.error(seq)
             log.error(e, exc_info=True)
             exit(0)
@@ -227,9 +190,8 @@ class SingleStonkDataset(StonkBaseDataset):
             # 'price': self.price[seq_start_idx: seq_start_idx+self.sequence_length+1],
             # 'feats': self.feats[seq_start_idx: seq_start_idx+self.sequence_length]
             'price': price.float(),
-            'price_raw': price.float(),
             'feats': feats.float(),
-            'datetime': seq.index[0],
+            'datetime': seq['timestamp'].iloc[0],
         }
         return elem
 
@@ -255,11 +217,11 @@ def collate_fn(batch: List[Dict[str,torch.Tensor]]) -> Dict[str,torch.Tensor]:
 
 def get_dataloader(cfg: DictConfig) -> DataLoader:
     dataset = instantiate(cfg.dataset)
-    return DataLoader(dataset, collate_fn=collate_fn, **cfg.dataloader)
+    return DataLoader(dataset, collate_fn=collate_fn, pin_memory=False, **cfg.dataloader)
 
 def get_valdataloader(cfg: DictConfig) -> DataLoader:
     dataset = instantiate(cfg.val_dataset)
-    return DataLoader(dataset, collate_fn=collate_fn, **cfg.val_dataloader)
+    return DataLoader(dataset, collate_fn=collate_fn, pin_memory=False, **cfg.val_dataloader)
 
 
 @hydra.main(config_path="../configs", config_name="dummy")

@@ -3,7 +3,7 @@ import torch
 from torch import nn
 
 class SharpeCriterion(nn.Module):
-    def __init__(self, loss_type='sharpe'):
+    def __init__(self, loss_type='pnl'):
         super().__init__()
         self.loss_type = loss_type
 
@@ -21,6 +21,9 @@ class SharpeCriterion(nn.Module):
 
         # Add zero-position at start/end
         zero_pos = torch.zeros_like(positions[:,:1,:])
+
+        #
+        # positions[:,-1,:] = 0.0
         positions = torch.cat([zero_pos, positions, zero_pos], dim=1)
         delta_pos = positions[:,1:,:] - positions[:,:-1,:]      # Bx(T+1)x1 stock bought
         pnl_t = -1 * (delta_pos*price)                          # Note: negative sign
@@ -29,21 +32,21 @@ class SharpeCriterion(nn.Module):
         # typical pnl when predicting shares is given by    \mean shares * price
         # we isntead predict shares (in money value) as     \mean (shares*mean_price) * (price/mean_price)
 
-        pnl =  pnl_t.mean(dim=1)            # Bx1   pnl per candlestick
-        sharpe = pnl.mean() / (pnl.std() + 1e-8)
+        pnl =  pnl_t.sum(dim=1)            # Bx1   pnl per candlestick
+        # sharpe = pnl.mean() / (pnl.std() + 1e-8)
 
         metrics = {
             'pnl_t': pnl_t,
             'pnl_cumsum': torch.cumsum(pnl_t, dim=1)[:,0],     # accummulated pnl over time
             'pnl_sum': pnl_t.sum(dim=1).mean().item(),
             'pnl_mean': pnl.mean().item(),
-            'pnl_std': pnl.std().item(),
-            'sharpe': sharpe.item(),
+            # 'pnl_std': pnl.std().item(),
+            # 'sharpe': sharpe.item(),
         }
 
-        if self.loss_type == 'sharpe':
-            loss = -1 * sharpe          # Maximize sharpe
-        elif self.loss_type == 'pnl':
+        # if self.loss_type == 'sharpe':
+        #     loss = -1 * sharpe          # Maximize sharpe
+        if self.loss_type == 'pnl':
             loss = -1 * pnl.mean()      # Maximize pnl
         else:
             raise ValueError(self.loss_type)

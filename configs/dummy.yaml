@@ -10,11 +10,11 @@ hydra:
     dir: outputs/${now:%Y-%m-%d-%H:%M:%S}_${hydra.job.config_name}_${hydra.job.override_dirname}
 
 dataloader:
-  batch_size: 256
-  num_workers: 12
+  batch_size: 1
+  num_workers: 1
 val_dataloader:
   batch_size: 1
-  num_workers: 12
+  num_workers: 1
   shuffle: False
 
 random_seed: 0
@@ -28,5 +28,5 @@ weights:
 
 display:
   logdir: 'summary'
-  iprint: 10
+  iprint: 1
   ival: 1  # in epochs

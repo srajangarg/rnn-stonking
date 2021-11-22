@@ -43,28 +43,28 @@ def evaluate(model: torch.nn.Module, dataloader: DataLoader, epoch: int,
     positions_dict = {}
 
     for i, inputs in enumerate(dataloader):
-        inputs = {k: (v.to(device) if torch.is_tensor(v) else v) for k,v in inputs.items()}
+        # inputs = {k: (v.to(device) if torch.is_tensor(v) else v) for k,v in inputs.items()}
 
         # Calculate positions and loss
         positions = model(inputs)
         loss, metrics = criterion(positions, inputs)
 
         # Note: Assuming batch_size = 1
-        assert(inputs['price_raw'].shape[0] == 1)
+        # assert(inputs['price_raw'].shape[0] == 1)
 
         # Calculate metrics
-        day_open = inputs['price_raw'][0, 0]  # Close of first minute that day
-        day_close = inputs['price_raw'][0, -1]  # Close of last minute that day
-        movement = day_close - day_open
-        volatility = inputs['price_raw'].std()/inputs['price_raw'].mean()
-        raw_pnl = metrics['pnl_sum'] * inputs['price_raw'][0,0].item()
+        # day_open = inputs['price_raw'][0, 0]  # Close of first minute that day
+        # day_close = inputs['price_raw'][0, -1]  # Close of last minute that day
+        # movement = day_close - day_open
+        # volatility = inputs['price_raw'].std()/inputs['price_raw'].mean()
+        # raw_pnl = metrics['pnl_sum'] * inputs['price_raw'][0,0].item()
 
         metrics_list.append(
             dict(
                 **{k:v for k,v in metrics.items() if isinstance(v, float)},
-                volatility=volatility,
-                movement=movement,
-                raw_pnl=raw_pnl,
+                # volatility=volatility,
+                # movement=movement,
+                raw_pnl=metrics['pnl_sum'],
                 datetime=inputs["datetime"][0],
             )
         )
@@ -74,34 +74,34 @@ def evaluate(model: torch.nn.Module, dataloader: DataLoader, epoch: int,
     positions_dump_file.parent.mkdir(exist_ok=True)
     torch.save(positions_dict, positions_dump_file)
 
-    df = pd.DataFrame(metrics_list).set_index('datetime').sort_index()
+    # df = pd.DataFrame(metrics_list).set_index('datetime').sort_index()
 
-    # Scatter plots
-    fig = plt.figure()
-    plt.scatter(df['movement'], df['pnl_sum'])
-    pnl_vs_move = tensorboardX.utils.figure_to_image(fig)
-    plt.close()
-    viz.plot_images({'pnl_vs_move': pnl_vs_move}, epoch)
+    # # Scatter plots
+    # fig = plt.figure()
+    # plt.scatter(df['movement'], df['pnl_sum'])
+    # pnl_vs_move = tensorboardX.utils.figure_to_image(fig)
+    # plt.close()
+    # viz.plot_images({'pnl_vs_move': pnl_vs_move}, epoch)
 
-    # Scatter plots
-    fig = plt.figure()
-    plt.scatter(df['volatility'], df['pnl_sum'])
-    pnl_vs_vola = tensorboardX.utils.figure_to_image(fig)
-    plt.close()
-    viz.plot_images({'pnl_vs_vola': pnl_vs_vola}, epoch)
+    # # Scatter plots
+    # fig = plt.figure()
+    # plt.scatter(df['volatility'], df['pnl_sum'])
+    # pnl_vs_vola = tensorboardX.utils.figure_to_image(fig)
+    # plt.close()
+    # viz.plot_images({'pnl_vs_vola': pnl_vs_vola}, epoch)
 
-    # Line plots
-    fig = plt.figure()
-    plt.plot(df.index, df['pnl_sum'].cumsum())
-    pnl_vs_time = tensorboardX.utils.figure_to_image(fig)
-    plt.close()
-    viz.plot_images({'pnl_vs_time': pnl_vs_time}, epoch)
+    # # Line plots
+    # fig = plt.figure()
+    # plt.plot(df.index, df['pnl_sum'].cumsum())
+    # pnl_vs_time = tensorboardX.utils.figure_to_image(fig)
+    # plt.close()
+    # viz.plot_images({'pnl_vs_time': pnl_vs_time}, epoch)
 
-    # Line plots
-    fig = plt.figure()
-    plt.hist(df['pnl_sum'])
-    pnl_hist = tensorboardX.utils.figure_to_image(fig)
-    plt.close()
-    viz.plot_images({'pnl_hist': pnl_hist}, epoch)
+    # # Line plots
+    # fig = plt.figure()
+    # plt.hist(df['pnl_sum'])
+    # pnl_hist = tensorboardX.utils.figure_to_image(fig)
+    # plt.close()
+    # viz.plot_images({'pnl_hist': pnl_hist}, epoch)
 
     log.info(f'Done evaluating model at epoch {epoch}')

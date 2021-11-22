@@ -1,22 +1,6 @@
 _target_: src.data.SingleStonkDataset
 
-db:
-  ip: localhost
-  port: 3306
-  username: root
-  password: root
-  dbname: dev
-
-contract: CL    # Ticker of commodity being traded
-# start_date: '2020-04-08'  # Y-M-D
-# end_date:   '2020-08-13'  # Y-M-D
-start_date: '2012-01-01'  # Y-M-D
-end_date:   '2020-12-31'  # Y-M-D
 # cache_file: ${hydra:runtime.cwd}/cache/${dataset.contract}_fut${dataset.num_next_futures}_${dataset.start_date}_${dataset.end_date}.pkl
 
-resolution: 1min          # Data resolution - 1min/5min/1day
-num_next_futures: 3       # Use data from the next N futures
-
 sequence_length: 300  # Train on sequences of these lengths
-subsequence_shift: 1
 # feature_size: 5 * num_next_futures       # open/high/low/close/volume

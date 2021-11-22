@@ -70,7 +70,8 @@ def main(cfg : DictConfig) -> None:
     for epoch in range(cfg.optim.num_epochs):
 
         # Evaluate
-        evaluate(model, val_dataloader, -1, output_dir='eval/', viz=viz)
+        if epoch % 10 == 0:
+            evaluate(model, val_dataloader, epoch, output_dir='eval/', viz=viz)
 
         for i, inputs in enumerate(dataloader):
             inputs = {k:(v.to(device) if torch.is_tensor(v) else v) for k,v in inputs.items()}
@@ -100,9 +101,9 @@ def main(cfg : DictConfig) -> None:
 
             iter += 1
 
-        if (epoch%cfg.display.ival)==0:
-            # Evaluate
-            evaluate(model, val_dataloader, epoch, output_dir='eval/', viz=viz)
+        # if (epoch%cfg.display.ival)==0:
+        #     # Evaluate
+        #     evaluate(model, val_dataloader, epoch, output_dir='eval/', viz=viz)
 
 if __name__ == "__main__":
     main()
