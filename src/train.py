@@ -20,6 +20,8 @@ from .utils.tb_visualizer import TBVisualizer
 
 torch.backends.cudnn.benchmark = True
 
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 # A logger for this file
 log = logging.getLogger(__name__)
 
@@ -39,11 +41,11 @@ def main(cfg : DictConfig) -> None:
     log.info(dataloader.dataset)
     log.info('###########################')
 
-    log.info('###### Loading val data ######')
-    val_dataloader = get_valdataloader(cfg)
-    log.info(val_dataloader)
-    log.info(val_dataloader.dataset)
-    log.info('###########################')
+    # log.info('###### Loading val data ######')
+    # val_dataloader = get_valdataloader(cfg)
+    # log.info(val_dataloader)
+    # log.info(val_dataloader.dataset)
+    # log.info('###########################')
 
     log.info('###### Creating model #####')
     model: torch.nn.Module = instantiate(cfg.model)
@@ -71,7 +73,7 @@ def main(cfg : DictConfig) -> None:
 
         # Evaluate
         if epoch % 10 == 0:
-            evaluate(model, val_dataloader, epoch, output_dir='eval/', viz=viz)
+            evaluate(model, dataloader, epoch, output_dir='eval/', viz=viz)
 
         for i, inputs in enumerate(dataloader):
             inputs = {k:(v.to(device) if torch.is_tensor(v) else v) for k,v in inputs.items()}

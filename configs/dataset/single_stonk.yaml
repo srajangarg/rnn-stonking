@@ -2,5 +2,5 @@ _target_: src.data.SingleStonkDataset
 
 # cache_file: ${hydra:runtime.cwd}/cache/${dataset.contract}_fut${dataset.num_next_futures}_${dataset.start_date}_${dataset.end_date}.pkl
 
-sequence_length: 300  # Train on sequences of these lengths
+sequence_length: 50  # Train on sequences of these lengths
 # feature_size: 5 * num_next_futures       # open/high/low/close/volume
