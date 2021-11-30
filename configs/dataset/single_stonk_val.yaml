@@ -1,4 +1,4 @@
 _target_: src.data.SingleStonkDataset
 
-sequence_length: 300  # Train on sequences of these lengths
+sequence_length: 50  # Train on sequences of these lengths
 # feature_size: 5 * num_next_futures       # open/high/low/close/volume

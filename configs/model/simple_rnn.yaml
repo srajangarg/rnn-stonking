@@ -5,6 +5,6 @@ backbone: ???
 
 # Create an MLP with these parameters.
 readout:
-  output_size: 1
+  output_size: 6
   hidden_size: 256
   num_layers: 2

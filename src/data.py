@@ -139,7 +139,7 @@ class SingleStonkDataset(StonkBaseDataset):
         # self.idsubsequence_to_idxstart = [id for id,bad in zip(self.idsubsequence_to_idxstart, bad_rows) if not bad]
         # log.info(f'Removed {bad_rows.to_numpy().sum()} subsequences with NaN prev_close')
         # log.info(f'Left with {len(self)} subsequences')
-        self.data = pd.read_csv("/Users/garg/code/rnn-stonking/ether_sample.csv")
+        self.data = pd.read_csv("/Users/garg/code/rnn-stonking/top_6_sample.csv")
 
 
     def __len__(self):
@@ -165,13 +165,13 @@ class SingleStonkDataset(StonkBaseDataset):
                         containing open/close/low/high/volume/pos etc
         """
         # @srajan-garg: TODO might have to normalize prices/features
-
-        feat_cols = ['Open_15', 'High_15', 'Low_15', 'Close_15', 'VWAP_15', 'Volume_15', 'Count_15', 'Volume_Count', 'Open_60', 'High_60', 'Low_60', 'Close_60', 'VWAP_60', 'Volume_60', 'Count_60', 'Volume_Count', 'Open_240', 'High_240', 'Low_240', 'Close_240', 'VWAP_240', 'Volume_240', 'Count_240', 'Volume_Count']
+        top_6_ids = [1, 6, 3, 0, 4, 2]
+        feat_cols = ['1_Open_15', '1_High_15', '1_Low_15', '1_Close_15', '1_VWAP_15', '1_Volume_15', '1_Count_15', '1_Volume_Count', '1_Open_60', '1_High_60', '1_Low_60', '1_Close_60', '1_VWAP_60', '1_Volume_60', '1_Count_60', '1_Volume_Count', '1_Open_240', '1_High_240', '1_Low_240', '1_Close_240', '1_VWAP_240', '1_Volume_240', '1_Count_240', '1_Volume_Count', '6_Open_15', '6_High_15', '6_Low_15', '6_Close_15', '6_VWAP_15', '6_Volume_15', '6_Count_15', '6_Volume_Count', '6_Open_60', '6_High_60', '6_Low_60', '6_Close_60', '6_VWAP_60', '6_Volume_60', '6_Count_60', '6_Volume_Count', '6_Open_240', '6_High_240', '6_Low_240', '6_Close_240', '6_VWAP_240', '6_Volume_240', '6_Count_240', '6_Volume_Count', '3_Open_15', '3_High_15', '3_Low_15', '3_Close_15', '3_VWAP_15', '3_Volume_15', '3_Count_15', '3_Volume_Count', '3_Open_60', '3_High_60', '3_Low_60', '3_Close_60', '3_VWAP_60', '3_Volume_60', '3_Count_60', '3_Volume_Count', '3_Open_240', '3_High_240', '3_Low_240', '3_Close_240', '3_VWAP_240', '3_Volume_240', '3_Count_240', '3_Volume_Count', '0_Open_15', '0_High_15', '0_Low_15', '0_Close_15', '0_VWAP_15', '0_Volume_15', '0_Count_15', '0_Volume_Count', '0_Open_60', '0_High_60', '0_Low_60', '0_Close_60', '0_VWAP_60', '0_Volume_60', '0_Count_60', '0_Volume_Count', '0_Open_240', '0_High_240', '0_Low_240', '0_Close_240', '0_VWAP_240', '0_Volume_240', '0_Count_240', '0_Volume_Count', '4_Open_15', '4_High_15', '4_Low_15', '4_Close_15', '4_VWAP_15', '4_Volume_15', '4_Count_15', '4_Volume_Count', '4_Open_60', '4_High_60', '4_Low_60', '4_Close_60', '4_VWAP_60', '4_Volume_60', '4_Count_60', '4_Volume_Count', '4_Open_240', '4_High_240', '4_Low_240', '4_Close_240', '4_VWAP_240', '4_Volume_240', '4_Count_240', '4_Volume_Count', '2_Open_15', '2_High_15', '2_Low_15', '2_Close_15', '2_VWAP_15', '2_Volume_15', '2_Count_15', '2_Volume_Count', '2_Open_60', '2_High_60', '2_Low_60', '2_Close_60', '2_VWAP_60', '2_Volume_60', '2_Count_60', '2_Volume_Count', '2_Open_240', '2_High_240', '2_Low_240', '2_Close_240', '2_VWAP_240', '2_Volume_240', '2_Count_240', '2_Volume_Count']
 
         seq = self.data.iloc[idx: idx+self.sequence_length+1].copy()
         feats = seq[feat_cols].to_numpy()[:self.sequence_length]
-        price = seq[['Close']].to_numpy()
-
+        price = seq[[f'{idx}_Close' for idx in top_6_ids]].to_numpy()
+        price  = price / price[0,:]
 
         assert(feats.shape[0] == self.sequence_length)
         assert(price.shape[0] == self.sequence_length+1)

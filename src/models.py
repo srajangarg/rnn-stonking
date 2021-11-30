@@ -16,8 +16,8 @@ class SimpleModel(nn.Module):
         b,t,f = feats.shape
 
         rnn_outputs, _ = self.backbone(feats)   # BxTxH
-        positions = self.readout(rnn_outputs.reshape(b*t, -1))  # BTx1
-        positions = positions.view(b,t,1)
+        positions = self.readout(rnn_outputs.reshape(b*t, -1))  # BxTxA
+        positions = positions.view(b,t,6)
 
         return positions
 
